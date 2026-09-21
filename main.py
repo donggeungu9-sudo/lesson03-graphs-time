@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-페이지 설정
 
 st.set_page_config(
 page_title="영화 데이터 그래프 도감 1 - 시간",
@@ -10,22 +9,18 @@ page_icon="🎬",
 layout="wide"
 )
 
-앱 제목 및 설명
 
 st.title("🎬 영화 데이터 그래프 도감 1 - 시간")
 st.markdown("1년치(365일) 일별 박스오피스 10위권 기록을 바탕으로 시간 흐름에 따른 영화 데이터를 시각화하는 공간입니다.")
 
-데이터 로드 함수 (캐싱 적용)
 
 @st.cache_data
 def load_data():
 url = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_daily.csv"
 df = pd.read_csv(url, dtype={"날짜": str})
 
-# 날짜 열을 진짜 날짜(datetime)로 변환
 df["날짜"] = pd.to_datetime(df["날짜"], format="%Y%m%d")
 
-# 숫자형 데이터 변환 (필요시)
 for col in ["순위", "일관객", "누적관객", "스크린수", "상영횟수"]:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", ""), errors="coerce")
@@ -33,7 +28,6 @@ for col in ["순위", "일관객", "누적관객", "스크린수", "상영횟수
 return df
 
 
-데이터 불러오기 시도
 
 try:
 df = load_data()
@@ -41,11 +35,8 @@ except Exception as e:
 st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
 st.stop()
 
-==========================================
 
-구역 1: 영화별 일관객 변화 추이 (시간 축)
 
-==========================================
 
 st.markdown("---")
 st.header("📈 구역 1: 영화별 일관객 변화 (선 그래프)")
@@ -95,11 +86,8 @@ if selected_movie:
 else:
 st.warning("데이터에 영화명 정보가 없습니다.")
 
-==========================================
 
-향후 추가될 구역들을 위한 공간 안내
 
-==========================================
 
 st.markdown("---")
 st.markdown("### 🔮 앞으로 추가될 구역 안내")

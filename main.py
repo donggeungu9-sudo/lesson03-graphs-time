@@ -54,7 +54,7 @@ df.groupby("영화명")["일관객"]
 
 top5_df = df[df["영화명"].isin(top5_movies)].sort_values("날짜")
 
-fig2 = px.line(top5_df, x="날짜", y="일관객", color="영화명", markers=False)
+fig2 = px.line(top5_df, x="날`, y="일관객", color="영화명", markers=False)
 fig2.update_traces(hovertemplate="영화명: %{fullData.name}
 
 
@@ -68,4 +68,5 @@ st.plotly_chart(fig2, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
 
+-- 앞으로 그래프 3, 4, 5가 이 아래에 추가됩니다 ------------------
 -- 앞으로 그래프 3, 4, 5가 이 아래에 추가됩니다 ------------------

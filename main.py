@@ -1,4 +1,4 @@
-
+영화 데이터 그래프 도감 1 - 시간
 
 import streamlit as st
 import pandas as pd
@@ -19,6 +19,7 @@ return df
 
 df = load_data()
 
+── 그래프 1. 영화 하나의 흥행 곡선 ──────────────────────────
 
 st.header("1. 한 영화의 흥행 곡선")
 
@@ -40,9 +41,11 @@ st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세
 
 st.markdown("---")
 
+── 그래프 2. 관객수 상위 5개 영화 비교 ──────────────────────
 
 st.header("2. 관객수 상위 5개 영화 흥행 비교")
 
+일관객 합계가 가장 큰 5편의 영화를 선정합니다.
 
 top5_movies = (
 df.groupby("영화명")["일관객"]
@@ -71,3 +74,5 @@ fig2.update_traces(hovertemplate="영화명: %{fullData.name}
 st.plotly_chart(fig2, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
+
+── 앞으로 그래프 3, 4, 5가 이 아래에 추가됩니다 ──────────

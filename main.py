@@ -38,12 +38,7 @@ st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세
 st.header("2. 상위 5개 영화 흥행 비교")
 
 # 기간 내 일관객 합계가 가장 큰 5편 선정
-top5_movies = (
-    df.groupby("영화명")["일관객"]
-    .sum()
-    .nlargest(5)
-    .index.tolist()
-)
+top5_movies = df.groupby("영화명")["일관객"].sum().nlargest(5).index.tolist()
 df_top5 = df[df["영화명"].isin(top5_movies)].sort_values("날짜")
 
 fig2 = px.line(df_top5, x="날짜", y="일관객", color="영화명", markers=True)
@@ -54,8 +49,43 @@ st.plotly_chart(fig2, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
 
-# ── 그래프 3 (추가 기능): 날짜별 박스오피스 순위 및 정보 ──────────
-st.header("3. 날짜별 박스오피스 순위")
+# ── 그래프 3. 일별 총 관객수 추이 (영역 그래프) ──────────────
+st.header("3. 일별 총 관객수 추이")
+
+# 날짜별로 그날 10위권 일관객의 합계를 구합니다.
+daily_total = df.groupby("날짜", as_index=False)["일관객"].sum()
+daily_total = daily_total.sort_values("날짜")
+
+# 합계가 가장 컸던 날 3일을 찾습니다.
+top3_days = daily_total.nlargest(3, "일관객")
+
+fig3 = px.area(daily_total, x="날짜", y="일관객")
+fig3.update_traces(
+    hovertemplate="날짜: %{x|%Y-%m-%d}<br>총 관객: %{y:,}명<extra></extra>"
+)
+
+# 합계가 가장 컸던 날 3일을 그래프 위에 표시하고 날짜를 적어 줍니다.
+for _, row in top3_days.iterrows():
+    d_str = row["날짜"].strftime("%Y-%m-%d")
+    val = row["일관객"]
+    fig3.add_annotation(
+        x=row["날짜"],
+        y=val,
+        text=f"{d_str}<br>({val:,}명)",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor="red",
+        font=dict(color="red", size=10),
+    )
+
+st.plotly_chart(fig3, use_container_width=True)
+
+st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
+
+# ── 섹션 4. 날짜별 박스오피스 순위 ──────────────────────────
+st.header("4. 날짜별 박스오피스 순위표")
 
 # 고를 수 있는 가장 늦은 날짜는 어제까지 (오늘 건 집계 전)
 max_date = df["날짜"].max().date()
@@ -76,10 +106,8 @@ day_df = df[df["날짜"].dt.date == selected_date].sort_values("순위")
 if day_df.empty:
     st.warning("그날은 아직 집계 전입니다")
 else:
-    # 데이터 가공 (순위 증감 화살표, 100만 관객 트로피)
     display_rows = []
     for _, row in day_df.iterrows():
-        # rankInten: 전날 대비 순위 증감 (양수: 상승, 음수: 하락, 0: 변동없음)
         rank_inten = row.get("rankInten", 0)
         if rank_inten > 0:
             rank_arrow = f"🔴 ▲{rank_inten}"
@@ -88,7 +116,6 @@ else:
         else:
             rank_arrow = "-"
 
-        # 누적관객 100만 명 초과 시 트로피 이모지
         movie_name = row["영화명"]
         if row["누적관객"] >= 1000000:
             movie_name = f"🏆 {movie_name}"
@@ -105,6 +132,8 @@ else:
             }
         )
 
-    st.dataframe(pd.DataFrame(display_rows), hide_index=True, use_container_width=True)
+    st.dataframe(
+        pd.DataFrame(display_rows), hide_index=True, use_container_width=True
+    )
 
-st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
+st.caption("이 표로 알 수 있는 것: (한 문장으로 적어 보세요)")

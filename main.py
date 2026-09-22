@@ -120,8 +120,41 @@ st.plotly_chart(fig4, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
 
-# ── 섹션 5. 날짜별 박스오피스 순위 ──────────────────────────
-st.header("5. 날짜별 박스오피스 순위표")
+# ── 그래프 5. 월 × 요일별 일관객 합계 히트맵 ──────────────
+st.header("5. 월 × 요일별 관객수 히트맵")
+
+# 날짜에서 월과 요일 추출
+df_hm = df.copy()
+df_hm["월"] = df_hm["날짜"].dt.month.astype(str) + "월"
+df_hm["요일번호"] = df_hm["날짜"].dt.dayofweek  # 0: 월요일 ~ 6: 일요일
+days_order = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+days_dict = {i: name for i, name in enumerate(days_order)}
+df_hm["요일"] = df_hm["요일번호"].map(days_dict)
+
+# 월 × 요일별 일관객 합계 피벗 테이블 생성
+heatmap_data = (
+    df_hm.groupby(["월", "요일", "요일번호"], as_index=False)["일관객"]
+    .sum()
+    .sort_values(["월", "요일번호"])
+)
+
+# 월 순서 정렬을 위한 리스트 (데이터에 존재하는 월 순서대로)
+months_order = sorted(df_hm["날짜"].dt.month.unique())
+months_str_order = [f"{m}월" for m in months_order]
+
+fig5 = px.imshow(
+    heatmap_data.pivot(index="요일", columns="월", values="일관객").reindex(index=days_order, columns=months_str_order),
+    labels=dict(x="월", y="요일", color="일관객 합계"),
+    color_continuous_scale="Reds",
+    aspect="auto",
+)
+fig5.update_traces(hovertemplate="월: %{x}<br>요일: %{y}<br>일관객 합계: %{z:,}명<extra></extra>")
+st.plotly_chart(fig5, use_container_width=True)
+
+st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
+
+# ── 섹션 6. 날짜별 박스오피스 순위 ──────────────────────────
+st.header("6. 날짜별 박스오피스 순위표")
 
 # 고를 수 있는 가장 늦은 날짜는 어제까지 (오늘 건 집계 전)
 max_date = df["날짜"].max().date()

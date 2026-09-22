@@ -84,8 +84,44 @@ st.plotly_chart(fig3, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
 
-# ── 섹션 4. 날짜별 박스오피스 순위 ──────────────────────────
-st.header("4. 날짜별 박스오피스 순위표")
+# ── 그래프 4. 영화별 총 관객수 TOP 10 (가로 막대그래프) ─────────
+st.header("4. 영화별 총 관객수 TOP 10")
+
+# 영화별 총 관객수 합계와 10위권 진입 일수(데이터 개수) 계산
+movie_stats = (
+    df.groupby("영화명")
+    .agg(
+        총관객수=("일관객", "sum"),
+        진입일수=("날짜", "count"),
+    )
+    .reset_index()
+)
+
+# 관객이 많은 순으로 상위 10편 추출
+top10_df = movie_stats.nlargest(10, "총관객수").sort_values("총관객수", ascending=True)
+
+fig4 = px.bar(
+    top10_df,
+    x="총관객수",
+    y="영화명",
+    orientation="h",
+    text="총관객수",
+    hover_data={"진입일수": True, "총관객수": ":,"},
+)
+
+# y축(영화명) 순서를 관객수 많은 순이 위로 오도록 설정
+fig4.update_layout(yaxis=dict(categoryorder="array", categoryarray=top10_df["영화명"].tolist()))
+fig4.update_traces(
+    texttemplate="%{x:,}명",
+    textposition="outside",
+    hovertemplate="영화명: %{y}<br>총 관객수: %{x:,}명<br>10위권 진입 일수: %{customdata[0]}일<extra></extra>",
+)
+st.plotly_chart(fig4, use_container_width=True)
+
+st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
+
+# ── 섹션 5. 날짜별 박스오피스 순위 ──────────────────────────
+st.header("5. 날짜별 박스오피스 순위표")
 
 # 고를 수 있는 가장 늦은 날짜는 어제까지 (오늘 건 집계 전)
 max_date = df["날짜"].max().date()

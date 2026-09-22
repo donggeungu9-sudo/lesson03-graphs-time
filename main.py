@@ -1,72 +1,110 @@
-영화 데이터 그래프 도감 1 - 시간
-
-import streamlit as st
+import datetime
 import pandas as pd
 import plotly.express as px
+import streamlit as st
 
 st.set_page_config(page_title="영화 데이터 그래프 도감 1 - 시간", layout="wide")
 st.title("영화 데이터 그래프 도감 1 - 시간")
 
 DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_daily.csv"
 
+
 @st.cache_data
 def load_data():
-# 1년치(365일) 일별 박스오피스 10위권 기록을 불러옵니다.
-df = pd.read_csv(DATA_URL)
-# 여덟 자리 숫자로 된 날짜 열을 진짜 날짜로 바꿉니다.
-df["날짜"] = pd.to_datetime(df["날짜"], format="%Y%m%d")
-return df
+    # 1년치(365일) 일별 박스오피스 10위권 기록을 불러옵니다.
+    df = pd.read_csv(DATA_URL)
+    # 여덟 자리 숫자로 된 날짜 열을 진짜 날짜로 바꿉니다.
+    df["날짜"] = pd.to_datetime(df["날짜"], format="%Y%m%d")
+    return df
+
 
 df = load_data()
 
--- 그래프 1. 영화 하나의 흥행 곡선 --------------------------
-
+# ── 그래프 1. 영화 하나의 흥행 곡선 ──────────────────────────
 st.header("1. 한 영화의 흥행 곡선")
 
-드롭다운으로 영화를 고릅니다.
-
+# 드롭다운으로 영화를 고릅니다.
 movie_list = sorted(df["영화명"].unique())
 movie = st.selectbox("영화를 고르세요", movie_list)
 
 one = df[df["영화명"] == movie].sort_values("날짜")
 fig1 = px.line(one, x="날짜", y="일관객", markers=True)
-fig1.update_traces(hovertemplate="날짜 %{x|%Y-%m-%d}
-
-
-
-관객 %{y:,}명")
+fig1.update_traces(hovertemplate="날짜 %{x|%Y-%m-%d}<br>관객 %{y:,}명<extra></extra>")
 st.plotly_chart(fig1, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
 
--- 그래프 2. 기간 일관객 합계 상위 5개 영화 비교 ------------------
+# ── 그래프 2. 상위 5개 영화 흥행 곡선 비교 ──────────────────
+st.header("2. 상위 5개 영화 흥행 비교")
 
-st.header("2. 상위 5개 영화 일관객 비교")
-
-전체 기간 일관객 합계가 가장 큰 5편의 영화 선정
-
+# 기간 내 일관객 합계가 가장 큰 5편 선정
 top5_movies = (
-df.groupby("영화명")["일관객"]
-.sum()
-.nlargest(5)
-.index
+    df.groupby("영화명")["일관객"]
+    .sum()
+    .nlargest(5)
+    .index.tolist()
 )
+df_top5 = df[df["영화명"].isin(top5_movies)].sort_values("날짜")
 
-top5_df = df[df["영화명"].isin(top5_movies)].sort_values("날짜")
-
-fig2 = px.line(top5_df, x="날`, y="일관객", color="영화명", markers=False)
-fig2.update_traces(hovertemplate="영화명: %{fullData.name}
-
-
-
-날짜: %{x|%Y-%m-%d}
-
-
-
-관객: %{y:,}명")
+fig2 = px.line(df_top5, x="날짜", y="일관객", color="영화명", markers=True)
+fig2.update_traces(
+    hovertemplate="영화: %{fullData.name}<br>날짜: %{x|%Y-%m-%d}<br>관객: %{y:,}명<extra></extra>"
+)
 st.plotly_chart(fig2, use_container_width=True)
 
 st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
 
--- 앞으로 그래프 3, 4, 5가 이 아래에 추가됩니다 ------------------
--- 앞으로 그래프 3, 4, 5가 이 아래에 추가됩니다 ------------------
+# ── 그래프 3 (추가 기능): 날짜별 박스오피스 순위 및 정보 ──────────
+st.header("3. 날짜별 박스오피스 순위")
+
+# 고를 수 있는 가장 늦은 날짜는 어제까지 (오늘 건 집계 전)
+max_date = df["날짜"].max().date()
+yesterday = datetime.date.today() - datetime.timedelta(days=1)
+default_date = min(max_date, yesterday)
+min_date = df["날짜"].min().date()
+
+selected_date = st.date_input(
+    "날짜를 고르세요",
+    value=default_date,
+    min_value=min_date,
+    max_value=max_date,
+)
+
+# 선택한 날짜의 데이터 필터링
+day_df = df[df["날짜"].dt.date == selected_date].sort_values("순위")
+
+if day_df.empty:
+    st.warning("그날은 아직 집계 전입니다")
+else:
+    # 데이터 가공 (순위 증감 화살표, 100만 관객 트로피)
+    display_rows = []
+    for _, row in day_df.iterrows():
+        # rankInten: 전날 대비 순위 증감 (양수: 상승, 음수: 하락, 0: 변동없음)
+        rank_inten = row.get("rankInten", 0)
+        if rank_inten > 0:
+            rank_arrow = f"🔴 ▲{rank_inten}"
+        elif rank_inten < 0:
+            rank_arrow = f"🔵 ▼{abs(rank_inten)}"
+        else:
+            rank_arrow = "-"
+
+        # 누적관객 100만 명 초과 시 트로피 이모지
+        movie_name = row["영화명"]
+        if row["누적관객"] >= 1000000:
+            movie_name = f"🏆 {movie_name}"
+
+        display_rows.append(
+            {
+                "순위": row["순위"],
+                "전일대비": rank_arrow,
+                "영화명": movie_name,
+                "일관객": f"{row['일관객']:,}명",
+                "누적관객": f"{row['누적관객']:,}명",
+                "스크린수": f"{row['스크린수']:,}개",
+                "상영횟수": f"{row['상영횟수']:,}회",
+            }
+        )
+
+    st.dataframe(pd.DataFrame(display_rows), hide_index=True, use_container_width=True)
+
+st.caption("이 그래프로 알 수 있는 것: (한 문장으로 적어 보세요)")
